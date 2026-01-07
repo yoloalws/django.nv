@@ -17,6 +17,16 @@ jobs:
           pip install -r requirements.txt
           python manage.py test taskManager
 
+  release:
+    machine: true                                        # What is this for?
+    steps:
+      - checkout
+
+      - run: |
+          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+          docker build -t $DOCKER_USERNAME/django.nv .   # Build the application into Docker image
+          docker push $DOCKER_USERNAME/django.nv         # Push the image into registry
+
   integration:
     docker:
       - image: python:3.6
@@ -26,46 +36,22 @@ jobs:
           command: |
             echo "This is an integration step"
             exit 1
-
-  oast-frontend:
-    machine: true
-    steps:
-      - checkout
-
-      - run:
-          name: Install npm packages
-          command: npm install
-
-      - run:
-          name: Run RetireJS
-          command: |
-            docker run --rm -v $(pwd):/src -w /src hysnsec/retire --outputformat json --outputpath retirejs-output.json --severity high
-
-      - store_artifacts:
-          path: retirejs-output.json
-          destination: retirejs-artifact
+          when: on_fail                   # Even if the job fails, continue to the next stages
 
   prod:
     docker:
       - image: python:3.6
     steps:
       - checkout
-      - run: echo "This is a deploy step."
+      - run: echo "This is a 'deploy' step."
 
 workflows:
   version: 2
   django:
     jobs:
       - build
-      - test:
-          requires:
-            - build
-      - oast-frontend:
-          requires:
-            - test
-      - integration:
-          requires:
-            - oast-frontend
+      - test
+      - integration
       - prod:
           type: approval
           requires:

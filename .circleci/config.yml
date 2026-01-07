@@ -51,6 +51,7 @@ workflows:
     jobs:
       - build
       - test
+      - release
       - integration
       - prod:
           type: approval

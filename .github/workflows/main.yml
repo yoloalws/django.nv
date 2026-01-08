@@ -14,7 +14,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.6.10'
+          python-version: '3.8'
 
       - run: |
           pip3 install --upgrade virtualenv
@@ -32,7 +32,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.6.10'
+          python-version: '3.8'
 
       - run: |
           pip3 install --upgrade virtualenv
@@ -56,7 +56,7 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.6.10'
+          python-version: '3.8'
 
       - run: python3 upload-results.py --host ${{ secrets.DOJO_HOST }} --api_key ${{ secrets.DOJO_API_TOKEN }} --engagement_id 1 --product_id 1 --lead_id 1 --environment "Production" --result_file bandit-output.json --scanner "Bandit Scan"
 

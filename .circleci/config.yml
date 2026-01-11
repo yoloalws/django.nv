@@ -1,76 +1,43 @@
 jobs:
   build:
     docker:
-      - image: python:3.6                   # similar to "image" in GitLab
+      - image: cimg/base:stable                   # similar to "image" in GitLab
     steps:
       - checkout
-      - run: |                              # similar to "script" in GitLab
-          pip install -r requirements.txt
-          python manage.py check
+      - run: echo "This is a build step"          # similar to "script" in GitLab
 
   test:
     docker:
-      - image: python:3.6
+      - image: cimg/base:stable
     steps:
       - checkout
-      - run: |
-          pip install -r requirements.txt
-          python manage.py test taskManager
+      - run: echo "This is a test step"
 
-  oast:
+  nuclei:
     machine: true
     steps:
       - checkout
 
-      - run: docker run -v $(pwd):/src --rm hysnsec/safety check -r /src/requirements.txt --json | tee oast-results.json
+      - run: |
+          docker run --user $(id -u):$(id -g) -w /nuclei -v $(pwd):/nuclei:rw --rm projectdiscovery/nuclei:v2.9.6 -u https://prod-fasrmmp4.stg.lab.practical-devsecops.training -j -o nuclei-output.json
 
       - store_artifacts:
-          path: oast-results.json
-          destination: safety-artifact
-
-  release:
-    machine: true                                        # What is this for?
-    steps:
-      - checkout
-
-      - run: |
-          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-          docker build -t $DOCKER_USERNAME/django.nv .   # Build the application into Docker image
-          docker push $DOCKER_USERNAME/django.nv         # Push the image into registry
-
-  integration:
-    docker:
-      - image: python:3.6
-    steps:
-      - checkout
-      - run:
-          command: |
-            echo "This is an integration step"
-            exit 1
-          when: on_fail                   # Even if the job fails, continue to the next stages
+          path: nuclei-output.json
+          destination: nuclei-artifact             # Even if the job fails, continue to the next stages
 
   prod:
     docker:
-      - image: python:3.6
+      - image: cimg/base:stable
     steps:
       - checkout
-      - run: echo "This is a 'deploy' step."
+      - run: echo "This is a deploy step"
 
 workflows:
   version: 2
   django:
     jobs:
       - build
-      - test:
-          requires:
-            - build
-      - oast:
-          requires:
-            - test
-      - integration:
-          requires:
-            - oast
+      - test
+      - nuclei
       - prod:
           type: approval
-          requires:
-            - integration

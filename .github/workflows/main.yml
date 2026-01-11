@@ -1,3 +1,4 @@
+cat >.github/workflows/main.yaml<<EOF
 name: Django                                  # workflow name
 
 on:
@@ -56,6 +57,6 @@ jobs:
 
   prod:
     runs-on: ubuntu-22.04
-    needs: integration
+    needs: nuclei-scan
     steps:
       - run: echo "This is a deploy step."

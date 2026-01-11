@@ -45,14 +45,22 @@ jobs:
     runs-on: ubuntu-22.04
     needs: test
     steps:
-      - run: |
-           docker run --user $(id -u):$(id -g) -w /nuclei -v $(pwd):/nuclei:rw --rm projectdiscovery/nuclei:v2.9.6 -u https://prod-fasrmmp4.stg.lab.practical-devsecops.training -j -o nuclei-output.json
-
-      - uses: actions/upload-artifact@v4
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
-          name: nuclei scan
-          path: nuclei-output.json
-        if: always()        # what is this for?
+          ref: main
+
+      - name: Nuclei - Vulnerability Scan
+        uses: projectdiscovery/nuclei-action@main
+        with:
+          target: ${{ secrets.PROD_URL }}
+        continue-on-error: true
+
+      - name: GitHub Workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuclei.log
+          path: nuclei.log
 
   prod:
     runs-on: ubuntu-22.04

@@ -1,4 +1,3 @@
-cat >.github/workflows/main.yaml<<EOF
 name: Django                                  # workflow name
 
 on:

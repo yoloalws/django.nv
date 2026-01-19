@@ -14,7 +14,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: '3.6'
 
       - run: |
           pip3 install --upgrade virtualenv
@@ -32,7 +32,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: '3.6'
 
       - run: |
           pip3 install --upgrade virtualenv
@@ -40,30 +40,35 @@ jobs:
           source env/bin/activate
           pip install -r requirements.txt
           python manage.py test taskManager
-
-  nuclei-scan:
+  sast:
     runs-on: ubuntu-22.04
     needs: test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: main
+      - uses: actions/checkout@v2
 
-      - name: Nuclei - Vulnerability Scan
-        uses: projectdiscovery/nuclei-action@main
+      - run: docker run --rm -v $(pwd):/src hysnsec/bandit -r /src -f json -o /src/bandit-output.json
+
+      - uses: actions/upload-artifact@v4
         with:
-          target: ${{ secrets.PROD_URL }}
+          name: Bandit
+          path: bandit-output.json
+        if: always()                        # what is this for?
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.6'
+
+      - run: python3 upload-results.py --host ${{ secrets.DOJO_HOST }} --api_key ${{ secrets.DOJO_API_TOKEN }} --engagement_id 1 --product_id 1 --lead_id 1 --environment "Production" --result_file bandit-output.json --scanner "Bandit Scan"
+  integration:
+    runs-on: ubuntu-22.04
+    needs: test
+    steps:
+      - run: echo "This is an integration step"
+      - run: exit 1
         continue-on-error: true
-
-      - name: GitHub Workflow artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuclei.log
-          path: nuclei.log
 
   prod:
     runs-on: ubuntu-22.04
-    needs: nuclei-scan
+    needs: integration
     steps:
       - run: echo "This is a deploy step."
